@@ -1,6 +1,7 @@
 package com.example.demo.config;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.springframework.batch.core.ItemProcessListener;
 import org.springframework.batch.core.ItemReadListener;
@@ -13,6 +14,7 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
+import org.springframework.batch.item.support.CompositeItemProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +34,11 @@ public abstract class BaseConfig {
 	@Autowired
 	protected StepBuilderFactory stepBuilderFactory;
 
+	/** データの存在チェックするProcessor */
+	@Autowired
+	@Qualifier("ExistsCheckProcessor")
+	protected ItemProcessor<Employee, Employee> existsCheckProcessor;
+	
 	/** 性別の文字列を数値に変換するProcessor */
 	@Autowired
 	@Qualifier("GenderConvertProcessor")
@@ -73,5 +80,16 @@ public abstract class BaseConfig {
 					})
 				.build(); // readerの生成
 		
+	}
+
+	/** 複数のProcessor */
+	@Bean
+	@StepScope
+	public ItemProcessor<Employee,Employee> compositeProcessor() {
+		CompositeItemProcessor<Employee,Employee> compositeProcessor = new CompositeItemProcessor<>();
+		
+		// ProcessorList
+		compositeProcessor.setDelegates(Arrays.asList(this.existsCheckProcessor, this.genderConvertProcessor));
+		return compositeProcessor;
 	}
 }
